@@ -1,5 +1,24 @@
 import db from "../config/db.js";
 
+export const getNote = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const query = `SELECT * FROM notes WHERE id = $1`;
+    const result = await db.query(query, [id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Note not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Error fetching note:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
 export const getAllNotes = async (req, res) => {
   const { categories } = req.query;
 
@@ -45,29 +64,23 @@ export const createNote = async (req, res) => {
 
 export const updateNote = async (req, res) => {
   const { id } = req.params;
-  const updatableFields = ["category", "title", "content"];
-  const updatedFields = [];
-  const values = [];
-  let index = 1;
+  const { category, title, content } = req.body;
 
-  for (let field of updatableFields) {
-    if (req.body[field] !== undefined) {
-      updatedFields.push(`${field} = $${index}`);
-      values.push(req.body[field]);
-      index++;
-    }
+  // Validate that all required fields are present
+  if (!category || !title || content === undefined) {
+    return res.status(400).json({ error: "Missing required fields: category, title, or content" });
   }
-
-  if (updatedFields.length === 0) {
-    return res.status(400).json({ error: "No updates requested" });
-  }
-
-  values.push(id);
 
   try {
-    let query = `UPDATE notes SET ${updatedFields.join(
-      ", "
-    )} WHERE id = $${index} RETURNING *`;
+    const query = `
+      UPDATE notes
+      SET category = $1,
+          title = $2,
+          content = $3
+      WHERE id = $4
+      RETURNING *`;
+
+    const values = [category, title, content, id];
 
     const result = await db.query(query, values);
 
@@ -75,12 +88,13 @@ export const updateNote = async (req, res) => {
       return res.status(404).json({ error: "Note not found" });
     }
 
-    res.json({ message: "success" });
+    res.json(result.rows[0]); // Return the updated note
   } catch (err) {
     console.error("Error updating note:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 export const deleteNote = async (req, res) => {
   const { id } = req.params;

@@ -1,16 +1,40 @@
-function Note() {
+import { useNoteStore } from "../stores/useNoteStore";
+import EditNoteModal from "./EditNoteModal";
+
+function Note({ note }) {
+  const { deleteNote, setFormData } = useNoteStore();
+
+  const handleEdit = () => {
+    setFormData({
+      title: note.title,
+      category: note.category,
+      content: note.content,
+    });
+    const modal = document.getElementById("edit_note_dialog") as HTMLDialogElement;
+    if (modal) modal.showModal();
+  };
+
   return (
-    <div className="card w-96 bg-base-100 card-lg shadow-sm">
+    <div className="card w-96 card-lg shadow-sm bg-gray-700">
       <div className="card-body">
-        <h2 className="card-title">Large Card</h2>
-        <p>
-          A card component has a figure, a body part, and inside body there are
-          title and actions parts
-        </p>
+        <h2 className="card-title">{note.title}</h2>
+        <p>Category: {note.category}</p>
+        <p>{note.content}</p>
         <div className="justify-end card-actions">
-          <button className="btn btn-primary">Buy Now</button>
+          <button className="btn btn-primary" onClick={handleEdit}>
+            Edit
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => deleteNote(note.id)}
+          >
+            Delete
+          </button>
         </div>
       </div>
+
+      {/* You may choose to mount this once globally instead, e.g., in NotesPage */}
+      <EditNoteModal noteId={note.id} />
     </div>
   );
 }
